@@ -1,4 +1,5 @@
-{-# Language GADTs, NoMonomorphismRestriction, NoMonoLocalBinds, RankNTypes, FlexibleInstances #-}
+{-# Language GADTs, NoMonomorphismRestriction, NoMonoLocalBinds,
+             RankNTypes, FlexibleInstances #-}
 module Grin where
 
 import Control.Monad.ST.Lazy hiding (unsafeInterleaveST)
@@ -10,7 +11,7 @@ import Data.STRef.Lazy
 {-
   This is ''On Generating Unique Names'', by Lennart Augustsson,
   Mikael Rittri, and Dan Synek; but for STRef. Borrowed from Data.Supply,
-  (c) Iavor S. Diatchki, 2007 (BSD3), modified for my purposes. 
+  (c) Iavor S. Diatchki, 2007 (BSD3), modified for my purposes.
 -}
 
 -- TODO(farre): Move me to a separate file.
@@ -27,11 +28,11 @@ newSupply :: a -> (a -> a) -> ST s (Supply s a)
 newSupply start next = gen =<< newSTRef start
   where
     gen r = unsafeInterleaveST $ do
-      v  <- unsafeInterleaveST (modifySTRef r (\x -> fst (upd x)) >> readSTRef r)
+      v  <- unsafeInterleaveST (modifySTRef r upd >> readSTRef r)
       ls <- gen r
       rs <- gen r
       return (Supply v ls rs)
-    upd a = let b = next a in seq b (b, a)
+    upd a = let b = next a in seq b b
 
 modifySupply :: Supply s a -> (Supply s a -> b) -> Supply s b
 modifySupply s f = Supply (f s) (modifySupply l f) (modifySupply r f)
@@ -56,7 +57,7 @@ instance Monad (Program instr) where
 {-
   What follows is a deep embedding of GRIN as a DSL with a patterns.
   GRIN is by Urban Boquist 1999.
--}   
+-}
 class Value a where
   toValue :: a -> GrinValue
 
@@ -74,9 +75,10 @@ data Binding a b where
   Bind :: (Pattern a, Pattern b) => a -> GrinExpression b -> Binding a b
 
 data GrinExpression a where
-  Sequence :: (Pattern a, Pattern b) => GrinExpression a -> Binding a b -> GrinExpression b
+  Sequence :: (Pattern a, Pattern b) =>
+              GrinExpression a -> Binding a b -> GrinExpression b
   Unit :: Pattern a => GrinValue -> GrinExpression a
- 
+
 type Grin a = Program GrinExpression a
 
 type Unique = Integer
@@ -93,7 +95,8 @@ unit = singleton . Unit . toValue
 interpret :: Pattern a => Grin a -> GrinExpression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
   where
-    go :: (Pattern a, Pattern b) => Supply s Unique -> Grin a -> ST s (GrinExpression b)
+    go :: (Pattern a, Pattern b) =>
+          Supply s Unique -> Grin a -> ST s (GrinExpression b)
     go s (Return x)   = return . Unit . fromPattern $ x
     go s (x@(Unit v) `Then` f) = do
       let p = match (split s)
@@ -108,7 +111,7 @@ instance Value Integer where
 
 instance Value GrinValue where
   toValue = id
-  
+
 newtype Var = Var GrinValue
 
 instance Pattern Var where
@@ -123,7 +126,7 @@ instance Pattern Foo where
 
 instance Value Foo where
   toValue (Foo v0 v1) = Node "foo" [v0, v1]
-  
+
 instance Pattern GrinValue where
   fromPattern = id
   match (s:_) = freshVariable s
@@ -139,16 +142,16 @@ instance Show (Binding a b) where
 instance Show (GrinExpression a) where
   show (Unit v) = "unit " ++ show v
   show (Sequence e b) = show e ++ "; " ++ show b
-      
+
 -- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n
   unit v
-  
+
 test' :: Integer -> Grin GrinValue
 test' n = unit n >>= \(Var v) -> return v
-  
+
 test2 :: Integer -> Integer -> Grin GrinValue
 test2 m n = do
   Var v <- unit m
@@ -164,7 +167,7 @@ test3 = do
   Foo v3 v4 <- unit (42 :: Integer)
   Var v5 <- unit v4
   unit v0
-  
+
 test4 :: Pattern a => Grin a
 test4 = do
   Var x <- test (5 :: Integer)
