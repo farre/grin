@@ -134,7 +134,12 @@ instance Pattern GrinValue where
 instance Show GrinValue where
   show (Number n)   = show n
   show (Variable v) = v
-  show (Node n vs) = "(" ++ n ++ " " ++ concat (intersperse " " (map show vs)) ++ ")"
+  show (Node n vs) = showString "(" .
+                     showString n .
+                     showString " " .
+                     (flip (foldr id) $
+                       ((intersperse (showString " ")) . (map shows)) vs) .
+                     showString ")" $ ""
 
 instance Show (Binding a b) where
   show (Bind v e) = "\\" ++ show (fromPattern v) ++ " -> " ++ show e
