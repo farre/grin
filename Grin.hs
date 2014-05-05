@@ -21,7 +21,8 @@ supplyValue (Supply a _ _) = a
 
 split :: Supply s a -> [Supply s a]
 split (Supply _ s1 s2)  = s1 : split s2
- 
+
+-- TODO(farre): Is the unsafeInterleaveST safely unsafe?
 newSupply :: a -> (a -> a) -> ST s (Supply s a)
 newSupply start next = gen =<< newSTRef start
   where
@@ -40,6 +41,8 @@ modifySupply s f = Supply (f s) (modifySupply l f) (modifySupply r f)
   This is basically 'operational' as seen on hackage, by (c) Heinrich
   Apfelmus 2010-2011 (BSD3), modified for my purposes.
 -}
+
+-- TODO(farre): Move me to a separate file, or actually use operational.
 data Program instr a where
   Then   :: instr a -> (a -> Program instr b) -> Program instr b
   Return :: a -> Program instr a
@@ -137,8 +140,7 @@ instance Show (GrinExpression a) where
   show (Unit v) = "unit " ++ show v
   show (Sequence e b) = show e ++ "; " ++ show b
       
--- testing
-
+-- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n
@@ -178,8 +180,3 @@ runTest2 = interpret $ (test2 5 6)
 runTest3 = interpret $ (test3 :: Grin GrinValue)
 
 runTest4 = interpret $ (test4 :: Grin GrinValue)
-
-{-
-?: let foo = toValue (Foo (toValue 4) (toValue 5)) in show (interpret ((unit foo >>= \(Foo v0 v1) -> return v1) :: Grin GrinValue))
-"unit (foo 4 5); \\(foo x1 x2) -> unit x2"
--}
