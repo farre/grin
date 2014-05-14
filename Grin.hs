@@ -5,6 +5,7 @@ module Grin where
 import Control.Monad.ST.Lazy hiding (unsafeInterleaveST)
 import Control.Monad.ST.Lazy.Unsafe
 
+import Data.Function
 import Data.List
 import Data.STRef.Lazy
 
@@ -77,10 +78,15 @@ data Binding a b where
 data GrinExpression a where
   Sequence :: (Pattern a, Pattern b) =>
               GrinExpression a -> Binding a b -> GrinExpression b
-  Unit :: Pattern a => GrinValue -> GrinExpression a
+
+  Unit     :: Pattern a => GrinValue -> GrinExpression a
+  Store    :: Pattern a => GrinValue -> GrinExpression a
+  Fetch    :: Pattern a => GrinValue -> Maybe Offset -> GrinExpression a
+  Update   :: Pattern a => GrinValue -> GrinValue    -> GrinExpression a
 
 type Grin a = Program GrinExpression a
 
+type Offset = Integer
 type Unique = Integer
 
 number :: Integral a => a -> GrinValue
@@ -92,13 +98,26 @@ singleton i = i `Then` Return
 unit :: (Value v, Pattern p) => v -> Grin p
 unit = singleton . Unit . toValue
 
+store :: (Value v, Pattern p) => v -> Grin p
+store = singleton . Store . toValue
+
+fetch :: (Value v, Pattern p) => v -> Maybe Offset -> Grin p
+fetch v o = singleton . (flip Fetch o) . toValue $ v
+
+update :: (Value v, Value w, Pattern p) => v -> w -> Grin p
+update v w = singleton (Update (toValue v) (toValue w))
+
 interpret :: Pattern a => Grin a -> GrinExpression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
   where
     go :: (Pattern a, Pattern b) =>
           Supply s Unique -> Grin a -> ST s (GrinExpression b)
     go s (Return x)   = return . Unit . fromPattern $ x
-    go s (x@(Unit v) `Then` f) = do
+    go s (x@(Unit   {}) `Then` f) = go' s x f
+    go s (x@(Store  {}) `Then` f) = go' s x f
+    go s (x@(Fetch  {}) `Then` f) = go' s x f
+    go s (x@(Update {}) `Then` f) = go' s x f
+    go' s x f = do
       let p = match (split s)
       e <- go (head (split s)) (f p)
       return (Sequence x (Bind p e))
@@ -145,8 +164,11 @@ instance Show (Binding a b) where
   show (Bind v e) = "\\" ++ show (fromPattern v) ++ " -> " ++ show e
 
 instance Show (GrinExpression a) where
-  show (Unit v) = "unit " ++ show v
   show (Sequence e b) = show e ++ "; " ++ show b
+  show (Unit v)       = "unit " ++ show v
+  show (Store v)      = "store " ++ show v
+  show (Fetch v n)    = "fetch " ++ show v ++ maybe "" (\n' -> "[" ++ show n' ++ "]") n
+  show (Update v w)   = "update " ++ show v ++ " " ++ show w
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
@@ -179,6 +201,16 @@ test4 = do
   Var y <- test3
   unit y
 
+test5 :: Pattern a => Grin a
+test5 = do
+  Var x <- unit (5 :: Integer)
+  Var y <- store x
+  Var z <- update y (5 :: Integer)
+  unit y
+
+test4' :: Pattern a => Grin a
+test4' = test 5 >>= \(Var x) -> test3 >>= \(Var y) -> unit y
+
 runTest = interpret $ (test 5 :: Grin GrinValue)
 
 runTest' = interpret $ (test' 5)
@@ -188,3 +220,7 @@ runTest2 = interpret $ (test2 5 6)
 runTest3 = interpret $ (test3 :: Grin GrinValue)
 
 runTest4 = interpret $ (test4 :: Grin GrinValue)
+
+runTest4' = interpret $ (test4' :: Grin GrinValue)
+
+runTest5 = interpret $ (test5 :: Grin GrinValue)
