@@ -64,9 +64,12 @@ class Value a where
 
 class Pattern a where
   fromPattern :: a -> GrinValue
-  match :: [Supply s Unique] -> a
+  match :: [Variable] -> a
 
 data Variable = Register Integer | Name String
+
+instance Value Variable where
+  toValue = Variable
 
 instance Show Variable where
   show (Register n) = 'x' : show n
@@ -87,8 +90,8 @@ data GrinExpression a where
 
   Unit     :: Pattern a => GrinValue -> GrinExpression a
   Store    :: Pattern a => GrinValue -> GrinExpression a
-  Fetch    :: Pattern a => GrinValue -> Maybe Offset -> GrinExpression a
-  Update   :: Pattern a => GrinValue -> GrinValue    -> GrinExpression a
+  Fetch    :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
+  Update   :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
 
 type Grin a = Program GrinExpression a
 
@@ -107,11 +110,11 @@ unit = singleton . Unit . toValue
 store :: (Value v, Pattern p) => v -> Grin p
 store = singleton . Store . toValue
 
-fetch :: (Value v, Pattern p) => v -> Maybe Offset -> Grin p
-fetch v o = singleton . (flip Fetch o) . toValue $ v
+fetch :: Pattern p => Variable -> Maybe Offset -> Grin p
+fetch v o = singleton . (flip Fetch o) $ v
 
-update :: (Value v, Value w, Pattern p) => v -> w -> Grin p
-update v w = singleton (Update (toValue v) (toValue w))
+update :: (Value w, Pattern p) => Variable -> w -> Grin p
+update v w = singleton (Update v (toValue w))
 
 interpret :: Pattern a => Grin a -> GrinExpression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
@@ -124,12 +127,12 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
     go s (x@(Fetch  {}) `Then` f) = go' s x f
     go s (x@(Update {}) `Then` f) = go' s x f
     go' s x f = do
-      let p = match (split s)
+      let p = match . (map newRegister) . split $ s
       e <- go (head (split s)) (f p)
       return (Sequence x (Bind p e))
 
-newRegister :: Supply s Unique -> GrinValue
-newRegister = Variable . Register . supplyValue
+newRegister :: Supply s Unique -> Variable
+newRegister = Register . supplyValue
 
 instance Value Integer where
   toValue = Number
@@ -137,24 +140,24 @@ instance Value Integer where
 instance Value GrinValue where
   toValue = id
 
-newtype Var = Var GrinValue
+newtype Var = Var Variable
 
 instance Pattern Var where
-  fromPattern (Var v) = v
-  match (s:_) = Var (newRegister s)
+  fromPattern (Var v) = toValue v
+  match (s:_) = Var s
 
-data Foo = Foo GrinValue GrinValue
+data Foo = Foo Variable Variable
 
 instance Pattern Foo where
-  fromPattern (Foo v0 v1) = Node "foo" [v0, v1]
-  match (s0:s1:_) = Foo (newRegister s0) (newRegister s1)
+  fromPattern (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
+  match (s0:s1:_) = Foo s0 s1
 
 instance Value Foo where
-  toValue (Foo v0 v1) = Node "foo" [v0, v1]
+  toValue (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
 
 instance Pattern GrinValue where
   fromPattern = id
-  match (s:_) = newRegister s
+  match (s:_) = toValue s
 
 instance Show GrinValue where
   show (Number n)   = show n
@@ -183,7 +186,7 @@ test n = do
   unit v
 
 test' :: Integer -> Grin GrinValue
-test' n = unit n >>= \(Var v) -> return v
+test' n = unit n >>= \(Var v) -> return (toValue v)
 
 test2 :: Integer -> Integer -> Grin GrinValue
 test2 m n = do
