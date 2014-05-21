@@ -66,9 +66,15 @@ class Pattern a where
   fromPattern :: a -> GrinValue
   match :: [Supply s Unique] -> a
 
+data Variable = Register Integer | Name String
+
+instance Show Variable where
+  show (Register n) = 'x' : show n
+  show (Name n) = n
+
 data GrinValue where
   Number   :: Integer -> GrinValue
-  Variable :: String -> GrinValue
+  Variable :: Variable -> GrinValue
   Empty    :: GrinValue
   Node     :: String -> [GrinValue] -> GrinValue
 
@@ -122,8 +128,8 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
       e <- go (head (split s)) (f p)
       return (Sequence x (Bind p e))
 
-freshVariable :: Supply s Unique -> GrinValue
-freshVariable s = Variable ("x" ++ show (supplyValue s))
+newRegister :: Supply s Unique -> GrinValue
+newRegister = Variable . Register . supplyValue
 
 instance Value Integer where
   toValue = Number
@@ -135,24 +141,24 @@ newtype Var = Var GrinValue
 
 instance Pattern Var where
   fromPattern (Var v) = v
-  match (s:_) = Var (freshVariable s)
+  match (s:_) = Var (newRegister s)
 
 data Foo = Foo GrinValue GrinValue
 
 instance Pattern Foo where
   fromPattern (Foo v0 v1) = Node "foo" [v0, v1]
-  match (s0:s1:_) = Foo (freshVariable s0) (freshVariable s1)
+  match (s0:s1:_) = Foo (newRegister s0) (newRegister s1)
 
 instance Value Foo where
   toValue (Foo v0 v1) = Node "foo" [v0, v1]
 
 instance Pattern GrinValue where
   fromPattern = id
-  match (s:_) = freshVariable s
+  match (s:_) = newRegister s
 
 instance Show GrinValue where
   show (Number n)   = show n
-  show (Variable v) = v
+  show (Variable v) = show v
   show (Node n vs) = showString "(" .
                      showString n .
                      showString " " .
