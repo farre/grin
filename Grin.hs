@@ -94,7 +94,7 @@ data GrinExpression a where
   Unit        :: Pattern a => GrinValue -> GrinExpression a
   Store       :: Pattern a => GrinValue -> GrinExpression a
   Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
-  Update   :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
+  Update      :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
 
 type Grin a = Program GrinExpression a
 
