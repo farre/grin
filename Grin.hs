@@ -128,10 +128,11 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
     go :: (Pattern a, Pattern b) =>
           Supply s Unique -> Grin a -> ST s (GrinExpression b)
     go s (Return x)   = return . Unit . fromPattern $ x
-    go s (x@(Unit   {}) `Then` f) = go' s x f
-    go s (x@(Store  {}) `Then` f) = go' s x f
-    go s (x@(Fetch  {}) `Then` f) = go' s x f
-    go s (x@(Update {}) `Then` f) = go' s x f
+    go s (x@(Application   {}) `Then` f) = go' s x f
+    go s (x@(Unit          {}) `Then` f) = go' s x f
+    go s (x@(Store         {}) `Then` f) = go' s x f
+    go s (x@(Fetch         {}) `Then` f) = go' s x f
+    go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
       let p = match . (map newRegister) . split $ s
       e <- go (head (split s)) (f p)
@@ -179,11 +180,12 @@ instance Show (Binding a b) where
   show (Bind v e) = "\\" ++ show (fromPattern v) ++ " -> " ++ show e
 
 instance Show (GrinExpression a) where
-  show (Sequence e b) = show e ++ "; " ++ show b
-  show (Unit v)       = "unit " ++ show v
-  show (Store v)      = "store " ++ show v
-  show (Fetch v n)    = "fetch " ++ show v ++ maybe "" (\n' -> "[" ++ show n' ++ "]") n
-  show (Update v w)   = "update " ++ show v ++ " " ++ show w
+  show (Sequence e b)     = show e ++ "; " ++ show b
+  show (Application n vs) = show n ++ " " ++ concat (intersperse " " (map show vs))
+  show (Unit v)           = "unit " ++ show v
+  show (Store v)          = "store " ++ show v
+  show (Fetch v n)        = "fetch " ++ show v ++ maybe "" (\n' -> "[" ++ show n' ++ "]") n
+  show (Update v w)       = "update " ++ show v ++ " " ++ show w
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
@@ -226,6 +228,13 @@ test5 = do
 test4' :: Pattern a => Grin a
 test4' = test 5 >>= \(Var x) -> test3 >>= \(Var y) -> unit y
 
+test6 :: Pattern a => Grin a
+test6 = do
+  Var x <- unit (5 :: Integer)
+  Var y <- store x
+  Var z <- (Name "f") $+ args (toValue x) (toValue y) (number 5)
+  unit z
+
 runTest = interpret $ (test 5 :: Grin GrinValue)
 
 runTest' = interpret $ (test' 5)
@@ -239,3 +248,5 @@ runTest4 = interpret $ (test4 :: Grin GrinValue)
 runTest4' = interpret $ (test4' :: Grin GrinValue)
 
 runTest5 = interpret $ (test5 :: Grin GrinValue)
+
+runTest6 = interpret $ (test6 :: Grin GrinValue)
