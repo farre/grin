@@ -1,5 +1,5 @@
 {-# Language GADTs, NoMonomorphismRestriction, NoMonoLocalBinds,
-             RankNTypes, FlexibleInstances #-}
+             RankNTypes #-}
 module Grin where
 
 import Control.Monad.ST.Lazy hiding (unsafeInterleaveST)
@@ -8,6 +8,8 @@ import Control.Monad.ST.Lazy.Unsafe
 import Data.Function
 import Data.List
 import Data.STRef.Lazy
+
+import VarArgs
 
 {-
   This is ''On Generating Unique Names'', by Lennart Augustsson,
@@ -85,12 +87,13 @@ data Binding a b where
   Bind :: (Pattern a, Pattern b) => a -> GrinExpression b -> Binding a b
 
 data GrinExpression a where
-  Sequence :: (Pattern a, Pattern b) =>
-              GrinExpression a -> Binding a b -> GrinExpression b
+  Sequence    :: (Pattern a, Pattern b) =>
+                 GrinExpression a -> Binding a b -> GrinExpression b
 
-  Unit     :: Pattern a => GrinValue -> GrinExpression a
-  Store    :: Pattern a => GrinValue -> GrinExpression a
-  Fetch    :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
+  Application :: Pattern a => Variable -> [GrinValue] -> GrinExpression a
+  Unit        :: Pattern a => GrinValue -> GrinExpression a
+  Store       :: Pattern a => GrinValue -> GrinExpression a
+  Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
   Update   :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
 
 type Grin a = Program GrinExpression a
@@ -103,6 +106,9 @@ number = Number . toInteger
 
 singleton :: instr a -> Program instr a
 singleton i = i `Then` Return
+
+($+) :: Pattern p => Variable -> [GrinValue] -> Grin p
+($+) n = singleton . (Application n)
 
 unit :: (Value v, Pattern p) => v -> Grin p
 unit = singleton . Unit . toValue
