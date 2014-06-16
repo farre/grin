@@ -66,7 +66,7 @@ class Value a where
 
 class Pattern a where
   fromPattern :: a -> GrinValue
-  match :: [Variable] -> a
+  pattern :: [Variable] -> a
 
 data Variable = Register Integer | Name String
 
@@ -134,7 +134,7 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
     go s (x@(Fetch         {}) `Then` f) = go' s x f
     go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
-      let p = match . (map newRegister) . split $ s
+      let p = pattern . (map newRegister) . split $ s
       e <- go (head (split s)) (f p)
       return (Sequence x (Bind p e))
 
@@ -151,20 +151,20 @@ newtype Var = Var Variable
 
 instance Pattern Var where
   fromPattern (Var v) = toValue v
-  match (s:_) = Var s
+  pattern (s:_) = Var s
 
 data Foo = Foo Variable Variable
 
 instance Pattern Foo where
   fromPattern (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
-  match (s0:s1:_) = Foo s0 s1
+  pattern (s0:s1:_) = Foo s0 s1
 
 instance Value Foo where
   toValue (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
 
 instance Pattern GrinValue where
   fromPattern = id
-  match (s:_) = toValue s
+  pattern (s:_) = toValue s
 
 instance Show GrinValue where
   show (Number n)   = show n
