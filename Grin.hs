@@ -89,12 +89,15 @@ data Binding a b where
 data GrinExpression a where
   Sequence    :: (Pattern a, Pattern b) =>
                  GrinExpression a -> Binding a b -> GrinExpression b
+  Case        :: Pattern a => Variable -> [(GrinValue, GrinExpression GrinValue)] -> GrinExpression a
 
   Application :: Pattern a => Variable -> [GrinValue] -> GrinExpression a
   Unit        :: Pattern a => GrinValue -> GrinExpression a
   Store       :: Pattern a => GrinValue -> GrinExpression a
   Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
   Update      :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
+
+  Switch      :: Pattern a => Variable -> [(GrinValue, Grin GrinValue)] -> GrinExpression a
 
 type Grin a = Program GrinExpression a
 
@@ -119,24 +122,44 @@ store = singleton . Store . toValue
 fetch :: Pattern p => Variable -> Maybe Offset -> Grin p
 fetch v o = singleton . (flip Fetch o) $ v
 
-update :: (Value w, Pattern p) => Variable -> w -> Grin p
-update v w = singleton (Update v (toValue w))
+update :: (Value v, Pattern p) => Variable -> v -> Grin p
+update v = singleton . (Update v) . toValue
+
+switch :: Pattern p => Variable -> [(GrinValue, Grin GrinValue)] -> Grin p
+switch v = singleton . (Switch v)
+
+match :: Pattern a => Supply s Unique -> (a -> Grin b) -> (GrinValue, Grin b)
+match s f = let (p, r) = bind s f in (fromPattern p, r)
+
+bind :: Pattern a => Supply s Unique -> (a -> Grin b) -> (a, Grin b)
+bind s f =
+  let p = pattern . (map newRegister) . split $ s
+  in (p, f p)
 
 interpret :: Pattern a => Grin a -> GrinExpression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
   where
     go :: (Pattern a, Pattern b) =>
           Supply s Unique -> Grin a -> ST s (GrinExpression b)
-    go s (Return x)   = return . Unit . fromPattern $ x
+    go s (Return x)    = return . Unit . fromPattern $ x
+    go s (x@(Switch        {}) `Then` f) = do
+      x' <- switchToCase s x
+      go' s x' f
     go s (x@(Application   {}) `Then` f) = go' s x f
     go s (x@(Unit          {}) `Then` f) = go' s x f
     go s (x@(Store         {}) `Then` f) = go' s x f
     go s (x@(Fetch         {}) `Then` f) = go' s x f
     go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
-      let p = pattern . (map newRegister) . split $ s
-      e <- go (head (split s)) (f p)
-      return (Sequence x (Bind p e))
+      let (p, e) = bind s f
+      e' <- go (head (split s)) e
+      return (Sequence x (Bind p e'))
+    switchToCase :: Pattern a =>
+                    Supply s Unique -> GrinExpression a -> ST s (GrinExpression a)
+    switchToCase s (Switch v as) = do
+      let (ps, es) = unzip as
+      es' <- mapM (go s) es
+      return (Case v (zip ps es'))
 
 newRegister :: Supply s Unique -> Variable
 newRegister = Register . supplyValue
