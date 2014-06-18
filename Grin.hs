@@ -6,7 +6,6 @@ import Control.Monad.ST.Lazy hiding (unsafeInterleaveST)
 import Control.Monad.ST.Lazy.Unsafe
 
 import Data.Function
-import Data.List
 import Data.STRef.Lazy
 
 import Program
@@ -128,28 +127,6 @@ instance Value Foo where
 instance Pattern GrinValue where
   fromPattern = id
   pattern (s:_) = toValue s
-
-instance Show GrinValue where
-  show (Number n)   = show n
-  show (Variable v) = show v
-  show (Node n vs) = showString "(" .
-                     showString n .
-                     showString " " .
-                     (flip (foldr id) $
-                       ((intersperse (showString " ")) . (map shows)) vs) .
-                     showString ")" $ ""
-
-instance Show (Binding a b) where
-  show (Bind v e) = "\\" ++ show (fromPattern v) ++ " -> " ++ show e
-
-instance Show (GrinExpression a) where
-  show (Sequence e b)     = show e ++ "; " ++ show b
-  show (Case v as) = error "I need to pretty print methinks"
-  show (Application n vs) = show n ++ " " ++ concat (intersperse " " (map show vs))
-  show (Unit v)           = "unit " ++ show v
-  show (Store v)          = "store " ++ show v
-  show (Fetch v n)        = "fetch " ++ show v ++ maybe "" (\n' -> "[" ++ show n' ++ "]") n
-  show (Update v w)       = "update " ++ show v ++ " " ++ show w
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
