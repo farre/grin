@@ -86,6 +86,8 @@ data GrinValue where
 data Binding a b where
   Bind :: (Pattern a, Pattern b) => a -> GrinExpression b -> Binding a b
 
+type Alternative = [Variable] -> (GrinValue, Grin GrinValue)
+
 data GrinExpression a where
   Sequence    :: (Pattern a, Pattern b) =>
                  GrinExpression a -> Binding a b -> GrinExpression b
@@ -97,7 +99,7 @@ data GrinExpression a where
   Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
   Update      :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
 
-  Switch      :: Pattern a => Variable -> [(GrinValue, Grin GrinValue)] -> GrinExpression a
+  Switch      :: Pattern a => Variable -> [Alternative] -> GrinExpression a
 
 type Grin a = Program GrinExpression a
 
@@ -125,16 +127,17 @@ fetch v o = singleton . (flip Fetch o) $ v
 update :: (Value v, Pattern p) => Variable -> v -> Grin p
 update v = singleton . (Update v) . toValue
 
-switch :: Pattern p => Variable -> [(GrinValue, Grin GrinValue)] -> Grin p
+switch :: Pattern p => Variable -> [Alternative] -> Grin p
 switch v = singleton . (Switch v)
 
-match :: Pattern a => Supply s Unique -> (a -> Grin b) -> (GrinValue, Grin b)
-match s f = let (p, r) = bind s f in (fromPattern p, r)
+match :: Pattern a => (a -> Grin b) -> [Variable] -> (GrinValue, Grin b)
+match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
 
-bind :: Pattern a => Supply s Unique -> (a -> Grin b) -> (a, Grin b)
-bind s f =
-  let p = pattern . (map newRegister) . split $ s
-  in (p, f p)
+bind :: Pattern a => [Variable] -> (a -> Grin b) -> (a, Grin b)
+bind vs f = let p = pattern vs in (p, f p)
+
+newVariables :: Supply s Unique -> [Variable]
+newVariables = (map newRegister) . split
 
 interpret :: Pattern a => Grin a -> GrinExpression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
@@ -151,13 +154,13 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
     go s (x@(Fetch         {}) `Then` f) = go' s x f
     go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
-      let (p, e) = bind s f
+      let (p, e) = bind (newVariables s) f
       e' <- go (head (split s)) e
       return (Sequence x (Bind p e'))
     switchToCase :: Pattern a =>
                     Supply s Unique -> GrinExpression a -> ST s (GrinExpression a)
     switchToCase s (Switch v as) = do
-      let (ps, es) = unzip as
+      let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . split $ s
       es' <- mapM (go s) es
       return (Case v (zip ps es'))
 
@@ -204,6 +207,7 @@ instance Show (Binding a b) where
 
 instance Show (GrinExpression a) where
   show (Sequence e b)     = show e ++ "; " ++ show b
+  show (Case v as) = error "I need to pretty print methinks"
   show (Application n vs) = show n ++ " " ++ concat (intersperse " " (map show vs))
   show (Unit v)           = "unit " ++ show v
   show (Store v)          = "store " ++ show v
@@ -258,6 +262,14 @@ test6 = do
   Var z <- (Name "f") $+ args (toValue x) (toValue y) (number 5)
   unit z
 
+test7 :: Pattern a => Grin a
+test7 = do
+  Var x <- unit (5 :: Integer)
+  Var y <- switch (Name "l") $ args
+             (match $ \(Var x) -> unit x)
+             (match $ \(Foo a b) -> unit x)
+  unit y
+
 runTest = interpret $ (test 5 :: Grin GrinValue)
 
 runTest' = interpret $ (test' 5)
@@ -273,3 +285,5 @@ runTest4' = interpret $ (test4' :: Grin GrinValue)
 runTest5 = interpret $ (test5 :: Grin GrinValue)
 
 runTest6 = interpret $ (test6 :: Grin GrinValue)
+
+runTest7 = interpret $ (test7 :: Grin GrinValue)
