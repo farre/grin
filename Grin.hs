@@ -9,6 +9,8 @@ import Data.Function
 import Data.List
 import Data.STRef.Lazy
 
+import Program
+import Syntax
 import VarArgs
 
 {-
@@ -40,71 +42,6 @@ newSupply start next = gen =<< newSTRef start
 modifySupply :: Supply s a -> (Supply s a -> b) -> Supply s b
 modifySupply s f = Supply (f s) (modifySupply l f) (modifySupply r f)
   where Supply _ l r = s
-
-{-
-  This is basically 'operational' as seen on hackage, by (c) Heinrich
-  Apfelmus 2010-2011 (BSD3), modified for my purposes.
--}
-
--- TODO(farre): Move me to a separate file, or actually use operational.
-data Program instr a where
-  Then   :: instr a -> (a -> Program instr b) -> Program instr b
-  Return :: a -> Program instr a
-
-instance Monad (Program instr) where
-  return = Return
-  x >>= f = case x of
-    Return i    -> f i
-    i `Then` is -> i `Then` (\a -> is a >>= f)
-
-{-
-  What follows is a deep embedding of GRIN as a DSL with a patterns.
-  GRIN is by Urban Boquist 1999.
--}
-class Value a where
-  toValue :: a -> GrinValue
-
-class Pattern a where
-  fromPattern :: a -> GrinValue
-  pattern :: [Variable] -> a
-
-data Variable = Register Integer | Name String
-
-instance Value Variable where
-  toValue = Variable
-
-instance Show Variable where
-  show (Register n) = 'x' : show n
-  show (Name n) = n
-
-data GrinValue where
-  Number   :: Integer -> GrinValue
-  Variable :: Variable -> GrinValue
-  Empty    :: GrinValue
-  Node     :: String -> [GrinValue] -> GrinValue
-
-data Binding a b where
-  Bind :: (Pattern a, Pattern b) => a -> GrinExpression b -> Binding a b
-
-type Alternative = [Variable] -> (GrinValue, Grin GrinValue)
-
-data GrinExpression a where
-  Sequence    :: (Pattern a, Pattern b) =>
-                 GrinExpression a -> Binding a b -> GrinExpression b
-  Case        :: Pattern a => Variable -> [(GrinValue, GrinExpression GrinValue)] -> GrinExpression a
-
-  Application :: Pattern a => Variable -> [GrinValue] -> GrinExpression a
-  Unit        :: Pattern a => GrinValue -> GrinExpression a
-  Store       :: Pattern a => GrinValue -> GrinExpression a
-  Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
-  Update      :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
-
-  Switch      :: Pattern a => Variable -> [Alternative] -> GrinExpression a
-
-type Grin a = Program GrinExpression a
-
-type Offset = Integer
-type Unique = Integer
 
 number :: Integral a => a -> GrinValue
 number = Number . toInteger
