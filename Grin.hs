@@ -10,6 +10,7 @@ import Data.STRef.Lazy
 
 import Program
 import Syntax
+import Pretty
 import VarArgs
 
 {-
