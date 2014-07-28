@@ -8,6 +8,7 @@ import Control.Monad.ST.Lazy.Unsafe
 import Data.Function
 import Data.STRef.Lazy
 
+import List
 import Program
 import Syntax
 import Pretty
@@ -49,8 +50,8 @@ number = Number . toInteger
 singleton :: instr a -> Program instr a
 singleton i = i `Then` Return
 
-($+) :: Pattern p => Variable -> [GrinValue] -> Grin p
-($+) n = singleton . (Application n)
+($+) :: Pattern p => Variable -> List GrinValue -> Grin p
+($+) n = singleton . (Application n) . list
 
 unit :: (Value v, Pattern p) => v -> Grin p
 unit = singleton . Unit . toValue
@@ -64,8 +65,8 @@ fetch v o = singleton . (flip Fetch o) $ v
 update :: (Value v, Pattern p) => Variable -> v -> Grin p
 update v = singleton . (Update v) . toValue
 
-switch :: Pattern p => Variable -> [Alternative] -> Grin p
-switch v = singleton . (Switch v)
+switch :: Pattern p => Variable -> List Alternative -> Grin p
+switch v = singleton . (Switch v) . list
 
 match :: Pattern a => (a -> Grin b) -> [Variable] -> (GrinValue, Grin b)
 match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
