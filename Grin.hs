@@ -77,7 +77,7 @@ interpret' s e = go s e
                     Supply s Unique -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
       let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s
-      es' <- mapM (go (split s)) es
+      es' <- mapM (uncurry go) $ zip (splits s) es
       return (Case v (zip ps es'))
 
 instance Value Integer where
