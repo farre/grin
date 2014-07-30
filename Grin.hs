@@ -92,15 +92,6 @@ instance Pattern Var where
   fromPattern (Var v) = toValue v
   pattern (s:_) = Var s
 
-data Foo = Foo Variable Variable
-
-instance Pattern Foo where
-  fromPattern (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
-  pattern (s0:s1:_) = Foo s0 s1
-
-instance Value Foo where
-  toValue (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
-
 instance Pattern GrinValue where
   fromPattern = id
   pattern (s:_) = toValue s

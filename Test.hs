@@ -4,6 +4,15 @@ import Grin
 import Pretty
 
 -- TODO(farre): Remove testing, start using QuickCheck!
+data Foo = Foo Variable Variable
+
+instance Pattern Foo where
+  fromPattern (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
+  pattern (s0:s1:_) = Foo s0 s1
+
+instance Value Foo where
+  toValue (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
+
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n
