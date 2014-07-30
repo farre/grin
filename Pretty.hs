@@ -16,7 +16,7 @@ instance Pretty GrinValue where
   pretty (Variable v) = pretty v
   pretty (Node n vs)  = parens $ text n <+> hsep (vs >>= return . pretty)
 
-instance Pretty (GrinExpression a) where
+instance Pretty (Expression a) where
   pretty (Sequence e0 (Bind v e1)) =
     (pretty e0 <> semi <+>
      char '\\' <> pretty (fromPattern v) <+> text "->") $+$ pretty e1

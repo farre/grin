@@ -14,22 +14,22 @@ data GrinValue where
   Node     :: String -> [GrinValue] -> GrinValue
 
 data Binding a b where
-  Bind :: (Pattern a, Pattern b) => a -> GrinExpression b -> Binding a b
+  Bind :: (Pattern a, Pattern b) => a -> Expression b -> Binding a b
 
 type Alternative = [Variable] -> (GrinValue, Grin GrinValue)
 
-data GrinExpression a where
+data Expression a where
   Sequence    :: (Pattern a, Pattern b) =>
-                 GrinExpression a -> Binding a b -> GrinExpression b
-  Case        :: Pattern a => Variable -> [(GrinValue, GrinExpression GrinValue)] -> GrinExpression a
+                 Expression a -> Binding a b -> Expression b
+  Case        :: Pattern a => Variable -> [(GrinValue, Expression GrinValue)] -> Expression a
 
-  Application :: Pattern a => Variable -> [GrinValue] -> GrinExpression a
-  Unit        :: Pattern a => GrinValue -> GrinExpression a
-  Store       :: Pattern a => GrinValue -> GrinExpression a
-  Fetch       :: Pattern a => Variable  -> Maybe Offset -> GrinExpression a
-  Update      :: Pattern a => Variable  -> GrinValue    -> GrinExpression a
+  Application :: Pattern a => Variable -> [GrinValue] -> Expression a
+  Unit        :: Pattern a => GrinValue -> Expression a
+  Store       :: Pattern a => GrinValue -> Expression a
+  Fetch       :: Pattern a => Variable  -> Maybe Offset -> Expression a
+  Update      :: Pattern a => Variable  -> GrinValue    -> Expression a
 
-  Switch      :: Pattern a => Variable -> [Alternative] -> GrinExpression a
+  Switch      :: Pattern a => Variable -> [Alternative] -> Expression a
 
 class Value a where
   toValue :: a -> GrinValue
@@ -47,7 +47,7 @@ instance Show Variable where
   show (Register n) = 'x' : show n
   show (Name n) = n
 
-type Grin a = Program GrinExpression a
+type Grin a = Program Expression a
 
 type Offset = Integer
 type Unique = Integer
