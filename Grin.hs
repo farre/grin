@@ -70,14 +70,16 @@ interpret' s e = go s e
     go s (x@(Fetch         {}) `Then` f) = go' s x f
     go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
-      let (p, e) = bind (newVariables s) f
-      e' <- go (split s) e
+      let (s0, s1) = split s
+          (p, e) = bind (newVariables s0) f
+      e' <- go s1 e
       return (Sequence x (Bind p e'))
     switchToCase :: Pattern a =>
                     Supply s Unique -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
-      let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s
-      es' <- mapM (uncurry go) $ zip (splits s) es
+      let (s0, s1) = split s
+          (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s0
+      es' <- mapM (uncurry go) $ zip (splits s1) es
       return (Case v (zip ps es'))
 
 instance Value Integer where
@@ -107,9 +109,10 @@ instance Declarable (Grin GrinValue) where
   buildDeclaration n l u g = fmap (Declaration n (list l)) $ interpret' u g
 
 instance (Pattern a, Declarable b) => Declarable (a -> b) where
-  buildDeclaration n l u f =
-    let (p, d) = bind (newVariables u) f
-    in buildDeclaration n (append (fromPattern p) l) (split u) d
+  buildDeclaration n l s f =
+    let (s0, s1) = split s
+        (p, d) = bind (newVariables s0) f
+    in buildDeclaration n (append (fromPattern p) l) s1 d
 
 declare :: Declarable d => Name -> d -> Declaration
 declare name decl = runST (newSupply 0 (+1) >>= \s -> buildDeclaration name empty s decl)
