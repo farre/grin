@@ -106,14 +106,18 @@ instance Pattern GrinValue where
   pattern (s:_) = toValue s
 
 class Declarable a where
-  buildDeclaration :: List GrinValue -> Supply s Unique -> a -> ST s Declaration
+  buildDeclaration :: List GrinValue
+                   -> Supply s Unique
+                   -> a
+                   -> ST s Declaration
 
 instance Declarable (Grin GrinValue) where
   buildDeclaration l u g = fmap (Declaration (list l)) $ interpret' u g
 
 instance (Pattern a, Declarable b) => Declarable (a -> b) where
-  buildDeclaration l u f = let (p, d) = bind (newVariables u) f
-                           in buildDeclaration (append (fromPattern p) l) (head (split u)) d
+  buildDeclaration l u f =
+    let (p, d) = bind (newVariables u) f
+    in buildDeclaration (append (fromPattern p) l) (head (split u)) d
 
 declare :: Declarable d => d -> Declaration
 declare d = runST (newSupply 0 (+1) >>= \s -> buildDeclaration empty s d)
