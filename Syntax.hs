@@ -32,7 +32,10 @@ data Expression a where
   Switch      :: Pattern a => Variable -> [Alternative] -> Expression a
 
 data Declaration where
-  Declaration :: [GrinValue] -> Expression GrinValue -> Declaration
+  Declaration :: Name
+              -> [GrinValue]
+              -> Expression GrinValue
+              -> Declaration
 
 class Value a where
   toValue :: a -> GrinValue
@@ -41,14 +44,19 @@ class Pattern a where
   fromPattern :: a -> GrinValue
   pattern :: [Variable] -> a
 
-data Variable = Register Integer | Name String
+newtype Name = Name String
+
+instance Show Name where
+  show (Name n) = n
+
+data Variable = Register Integer | VariableName Name
 
 instance Value Variable where
   toValue = Variable
 
 instance Show Variable where
   show (Register n) = 'x' : show n
-  show (Name n) = n
+  show (VariableName n) = show n
 
 type Grin a = Program Expression a
 

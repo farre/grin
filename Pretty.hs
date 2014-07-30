@@ -7,9 +7,12 @@ import Text.PrettyPrint
 class Pretty a where
   pretty :: a -> Doc
 
+instance Pretty Name where
+  pretty (Name n) = text n
+
 instance Pretty Variable where
   pretty (Register n) = char 'x' <> integer n
-  pretty (Name n) = text n
+  pretty (VariableName n) = pretty n
 
 instance Pretty GrinValue where
   pretty (Number n)   = integer n
@@ -31,7 +34,7 @@ instance Pretty (Expression a) where
   pretty (Update v w)       = text "update" <+> pretty v <+> pretty w
 
 instance Pretty Declaration where
-  pretty (Declaration vs e) = text "foo" <+> hsep (vs >>= return . pretty) <+> char '=' <+> pretty e
+  pretty (Declaration n vs e) = pretty n <+> hsep (vs >>= return . pretty) <+> char '=' <+> pretty e
 
 
 pp :: Pretty a => a -> IO ()

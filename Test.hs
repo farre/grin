@@ -48,7 +48,7 @@ test6 :: Pattern a => Grin a
 test6 = do
   Var x <- unit (5 :: Integer)
   Var y <- store x
-  Var z <- (Name "f") $+ args (toValue x) (toValue y) (number 5)
+  Var z <- (VariableName (Name "f")) $+ args (toValue x) (toValue y) (number 5)
   unit z
 
 test7 :: Pattern a => Grin a
@@ -91,8 +91,8 @@ runTest6 = interpret $ (test6 :: Grin GrinValue)
 
 runTest7 = interpret $ (test7 :: Grin GrinValue)
 
-runTest6' = declare (test6 :: Grin GrinValue)
+runTest6' = declare (Name "foo") (test6 :: Grin GrinValue)
 
-runTest8 = declare (test8 :: Var -> Grin GrinValue)
+runTest8 = declare (Name "foo") (test8 :: Var -> Grin GrinValue)
 
-runTest9 = declare (test9 :: Var -> Var -> Grin GrinValue)
+runTest9 = declare (Name "foo") (test9 :: Var -> Var -> Grin GrinValue)
