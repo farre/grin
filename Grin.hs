@@ -47,7 +47,7 @@ bind :: Pattern a => [Variable] -> (a -> b) -> (a, b)
 bind vs f = let p = pattern vs in (p, f p)
 
 newVariables :: Supply s Unique -> [Variable]
-newVariables = (map newRegister) . split
+newVariables = (map newRegister) . splits
 
 interpret :: Pattern a => Grin a -> Expression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> interpret' s e)
@@ -68,13 +68,13 @@ interpret' s e = go s e
     go s (x@(Update        {}) `Then` f) = go' s x f
     go' s x f = do
       let (p, e) = bind (newVariables s) f
-      e' <- go (head (split s)) e
+      e' <- go (split s) e
       return (Sequence x (Bind p e'))
     switchToCase :: Pattern a =>
                     Supply s Unique -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
-      let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . split $ s
-      es' <- mapM (go (head (split s))) es
+      let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s
+      es' <- mapM (go (split s)) es
       return (Case v (zip ps es'))
 
 newRegister :: Supply s Unique -> Variable
@@ -118,7 +118,7 @@ instance Declarable (Grin GrinValue) where
 instance (Pattern a, Declarable b) => Declarable (a -> b) where
   buildDeclaration n l u f =
     let (p, d) = bind (newVariables u) f
-    in buildDeclaration n (append (fromPattern p) l) (head (split u)) d
+    in buildDeclaration n (append (fromPattern p) l) (split u) d
 
 declare :: Declarable d => Name -> d -> Declaration
 declare name decl = runST (newSupply 0 (+1) >>= \s -> buildDeclaration name empty s decl)

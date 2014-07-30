@@ -16,8 +16,11 @@ data Supply s a = Supply a (Supply s a) (Supply s a)
 supplyValue :: Supply s a -> a
 supplyValue (Supply a _ _) = a
 
-split :: Supply s a -> [Supply s a]
-split (Supply _ s1 s2)  = s1 : split s2
+splits :: Supply s a -> [Supply s a]
+splits (Supply _ s1 s2)  = s1 : splits s2
+
+split :: Supply s a -> Supply s a
+split (Supply _ s1 s2)  = s1
 
 -- TODO(farre): Is the unsafeInterleaveST safely unsafe?
 newSupply :: a -> (a -> a) -> ST s (Supply s a)
