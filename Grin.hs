@@ -49,6 +49,9 @@ bind vs f = let p = pattern vs in (p, f p)
 newVariables :: Supply s Unique -> [Variable]
 newVariables = (map newRegister) . splits
 
+newRegister :: Supply s Unique -> Variable
+newRegister = Register . supplyValue
+
 interpret :: Pattern a => Grin a -> Expression GrinValue
 interpret e = runST (newSupply 0 (+1) >>= \s -> interpret' s e)
 
@@ -76,9 +79,6 @@ interpret' s e = go s e
       let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s
       es' <- mapM (go (split s)) es
       return (Case v (zip ps es'))
-
-newRegister :: Supply s Unique -> Variable
-newRegister = Register . supplyValue
 
 instance Value Integer where
   toValue = Number
