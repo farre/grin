@@ -31,6 +31,9 @@ data Expression a where
 
   Switch      :: Pattern a => Variable -> [Alternative] -> Expression a
 
+data Declaration where
+  Declaration :: [GrinValue] -> Expression GrinValue -> Declaration
+
 class Value a where
   toValue :: a -> GrinValue
 

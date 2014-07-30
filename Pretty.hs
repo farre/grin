@@ -30,6 +30,9 @@ instance Pretty (Expression a) where
                               maybe empty (brackets . integer) n
   pretty (Update v w)       = text "update" <+> pretty v <+> pretty w
 
+instance Pretty Declaration where
+  pretty (Declaration vs e) = text "foo" <+> hsep (vs >>= return . pretty) <+> char '=' <+> pretty e
+
 
 pp :: Pretty a => a -> IO ()
 pp = putStrLn . (renderStyle style) . pretty

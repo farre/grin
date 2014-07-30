@@ -1,5 +1,6 @@
 {-# Language GADTs, NoMonomorphismRestriction, NoMonoLocalBinds,
-             RankNTypes #-}
+             RankNTypes, TypeSynonymInstances, FlexibleInstances,
+             RecordWildCards  #-}
 module Grin where
 
 import Control.Monad.ST.Lazy
@@ -39,14 +40,17 @@ switch v = singleton . (Switch v) . list
 match :: Pattern a => (a -> Grin b) -> [Variable] -> (GrinValue, Grin b)
 match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
 
-bind :: Pattern a => [Variable] -> (a -> Grin b) -> (a, Grin b)
+bind :: Pattern a => [Variable] -> (a -> b) -> (a, b)
 bind vs f = let p = pattern vs in (p, f p)
 
 newVariables :: Supply s Unique -> [Variable]
 newVariables = (map newRegister) . split
 
 interpret :: Pattern a => Grin a -> Expression GrinValue
-interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
+interpret e = runST (newSupply 0 (+1) >>= \s -> interpret' s e)
+
+interpret' :: Pattern a => Supply s Unique -> Grin a -> ST s (Expression GrinValue)
+interpret' s e = go s e
   where
     go :: (Pattern a, Pattern b) =>
           Supply s Unique -> Grin a -> ST s (Expression b)
@@ -67,7 +71,7 @@ interpret e = runST (newSupply 0 (+1) >>= \s -> go s e)
                     Supply s Unique -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
       let (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . split $ s
-      es' <- mapM (go s) es
+      es' <- mapM (go (head (split s))) es
       return (Case v (zip ps es'))
 
 newRegister :: Supply s Unique -> Variable
@@ -97,6 +101,19 @@ instance Value Foo where
 instance Pattern GrinValue where
   fromPattern = id
   pattern (s:_) = toValue s
+
+class Declarable a where
+  buildDeclaration :: List GrinValue -> Supply s Unique -> a -> ST s Declaration
+
+instance Declarable (Grin GrinValue) where
+  buildDeclaration l u g = fmap (Declaration (list l)) $ interpret' u g
+
+instance (Pattern a, Declarable b) => Declarable (a -> b) where
+  buildDeclaration l u f = let (p, d) = bind (newVariables u) f
+                           in buildDeclaration (append (fromPattern p) l) (head (split u)) d
+
+declare :: Declarable d => d -> Declaration
+declare d = runST (newSupply 0 (+1) >>= \s -> buildDeclaration empty s d)
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 test :: Pattern a => Integer -> Grin a
@@ -149,10 +166,24 @@ test6 = do
 test7 :: Pattern a => Grin a
 test7 = do
   Var x <- unit (5 :: Integer)
-  Var y <- switch (Name "l") $ args
+  Var y <- switch x $ args
              (match $ \(Var x) -> unit x)
              (match $ \(Foo a b) -> unit x)
   unit y
+
+test8 :: Pattern a => Var -> Grin a
+test8 (Var f) = do
+  Var x <- switch f $ args
+             (match $ \(Foo a b) -> unit a)
+  unit x
+
+test9 :: Pattern a => Var -> Var -> Grin a
+test9 (Var a0) (Var a1) = do
+  Var x <- switch a0 $ args
+             (match $ \(Foo a b) ->
+                switch a1 $ args
+                  (match $ \(Var y) -> unit y))
+  unit x
 
 runTest = interpret $ (test 5 :: Grin GrinValue)
 
@@ -171,3 +202,9 @@ runTest5 = interpret $ (test5 :: Grin GrinValue)
 runTest6 = interpret $ (test6 :: Grin GrinValue)
 
 runTest7 = interpret $ (test7 :: Grin GrinValue)
+
+runTest6' = declare (test6 :: Grin GrinValue)
+
+runTest8 = declare (test8 :: Var -> Grin GrinValue)
+
+runTest9 = declare (test9 :: Var -> Var -> Grin GrinValue)

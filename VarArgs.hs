@@ -13,7 +13,7 @@ class VarArgs r where
   build :: List (Elem r) -> r
 
 args :: VarArgs t => t
-args = build (List id)
+args = build empty
 
 instance VarArgs (List a) where
   type Elem (List a) = a
