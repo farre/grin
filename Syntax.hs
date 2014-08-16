@@ -46,17 +46,10 @@ class Pattern a where
 
 newtype Name = Name String
 
-instance Show Name where
-  show (Name n) = n
-
 data Variable = Register Integer | VariableName Name
 
 instance Value Variable where
   toValue = Variable
-
-instance Show Variable where
-  show (Register n) = 'x' : show n
-  show (VariableName n) = show n
 
 type Grin a = Program Expression a
 
