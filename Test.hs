@@ -82,26 +82,26 @@ test9 (Var a0) (Var a1) = do
                   (match $ \(Var y) -> unit y))
   unit x
 
-runTest = interpret $ (test 5 :: Grin GrinValue)
+runTest = pp $ interpret $ (test 5 :: Grin GrinValue)
 
-runTest' = interpret $ (test' 5)
+runTest' = pp $ interpret $ (test' 5)
 
-runTest2 = interpret $ (test2 5 6)
+runTest2 = pp $ interpret $ (test2 5 6)
 
-runTest3 = interpret $ (test3 :: Grin GrinValue)
+runTest3 = pp $ interpret $ (test3 :: Grin GrinValue)
 
-runTest4 = interpret $ (test4 :: Grin GrinValue)
+runTest4 = pp $ interpret $ (test4 :: Grin GrinValue)
 
-runTest4' = interpret $ (test4' :: Grin GrinValue)
+runTest4' = pp $ interpret $ (test4' :: Grin GrinValue)
 
-runTest5 = interpret $ (test5 :: Grin GrinValue)
+runTest5 = pp $ interpret $ (test5 :: Grin GrinValue)
 
-runTest6 = interpret $ (test6 :: Grin GrinValue)
+runTest6 = pp $ interpret $ (test6 :: Grin GrinValue)
 
-runTest7 = interpret $ (test7 :: Grin GrinValue)
+runTest7 = pp $ interpret $ (test7 :: Grin GrinValue)
 
-runTest6' = declare (Name "foo") (test6 :: Grin GrinValue)
+runTest6' = pp $ declare (Name "foo") (test6 :: Grin GrinValue)
 
-runTest8 = declare (Name "foo") (test8 :: Var -> Grin GrinValue)
+runTest8 = pp $ declare (Name "foo") (test8 :: Var -> Grin GrinValue)
 
-runTest9 = declare (Name "foo") (test9 :: Var -> Var -> Grin GrinValue)
+runTest9 = pp $ declare (Name "foo") (test9 :: Var -> Var -> Grin GrinValue)
