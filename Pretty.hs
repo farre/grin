@@ -14,19 +14,28 @@ instance Pretty Variable where
   pretty (Register n) = char 'x' <> integer n
   pretty (VariableName n) = pretty n
 
+prettyList = hsep . ((return $!) . pretty =<<)
+
 instance Pretty GrinValue where
   pretty (Number n)   = integer n
   pretty (Variable v) = pretty v
-  pretty (Node n vs)  = parens $ text n <+> hsep (vs >>= return . pretty)
+  pretty (Node n vs)  = parens $ text n <+> prettyList vs
 
 instance Pretty (Expression a) where
-  pretty (Sequence e0 (Bind v e1)) =
-    (pretty e0 <> semi <+>
-     char '\\' <> pretty (fromPattern v) <+> text "->") $+$ pretty e1
+  pretty (Sequence e0 (Bind p e1)) =
+    e0' `seq` p' `seq` e1' `seq` (e0' <> semi <+>
+     char '\\' <> p' <+> text "->") $+$ e1'
+    where p' = pretty (fromPattern p)
+          e0' = pretty e0
+          e1' = pretty e1
   pretty (Case v as) =
-    lparen <> hang (text "case" <+> pretty v <+> text "of")
-    4 (vcat $ [ pretty v <+> text "->" <+> pretty e | (v, e) <- as]) $$ rparen
-  pretty (Application n vs) = pretty n <+> hsep (vs >>= return . pretty)
+    v' `seq` cs `seq`
+      lparen <> hang (text "case" <+> pretty v <+> text "of")
+    4 cs $$ rparen
+    where
+      v' = pretty v
+      cs = vcat $ [ v' <+> text "->" <+> pretty e | (v, e) <- as]
+  pretty (Application n vs) = pretty n <+> prettyList vs
   pretty (Unit v)           = text "unit" <+> pretty v
   pretty (Store v)          = text "store" <+> pretty v
   pretty (Fetch v n)        = text "fetch" <+> pretty v <+>
@@ -34,7 +43,7 @@ instance Pretty (Expression a) where
   pretty (Update v w)       = text "update" <+> pretty v <+> pretty w
 
 instance Pretty Declaration where
-  pretty (Declaration n vs e) = pretty n <+> hsep (vs >>= return . pretty) <+> char '=' <+> pretty e
+  pretty (Declaration n vs e) = pretty n <+> prettyList vs <+> char '=' <+> pretty e
 
 
 pp :: Pretty a => a -> IO ()
