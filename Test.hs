@@ -2,16 +2,17 @@ module Test where
 
 import Grin
 import Pretty
+import Utils
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 data Foo = Foo Variable Variable
 
 instance Pattern Foo where
-  fromPattern (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
+  fromPattern (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
   pattern (s0:s1:_) = Foo s0 s1
 
 instance Value Foo where
-  toValue (Foo v0 v1) = Node "foo" [toValue v0, toValue v1]
+  toValue (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
 
 test :: Pattern a => Integer -> Grin a
 test n = do
@@ -31,7 +32,7 @@ test2 m n = do
 
 test3 :: Pattern a => Grin a
 test3 = do
-  Foo v0 v1 <- unit (Node "foo" [(number 3), (number 8)])
+  Foo v0 v1 <- unit (Node (var "foo") [(number 3), (number 8)])
   Var v2 <- unit v1
   Foo v3 v4 <- unit (42 :: Integer)
   Var v5 <- unit v4

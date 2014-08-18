@@ -11,7 +11,7 @@ data GrinValue where
   Number   :: Integer -> GrinValue
   Variable :: Variable -> GrinValue
   Empty    :: GrinValue
-  Node     :: String -> [GrinValue] -> GrinValue
+  Node     :: GrinValue -> [GrinValue] -> GrinValue
 
 data Binding a b where
   Bind :: (Pattern a, Pattern b) => a -> Expression b -> Binding a b

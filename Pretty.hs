@@ -19,7 +19,7 @@ prettyList = hsep . ((return $!) . pretty =<<)
 instance Pretty GrinValue where
   pretty (Number n)   = integer n
   pretty (Variable v) = pretty v
-  pretty (Node n vs)  = parens $ text n <+> prettyList vs
+  pretty (Node t vs)  = parens $ pretty t <+> prettyList vs
 
 instance Pretty (Expression a) where
   pretty (Sequence e0 (Bind p e1)) =
