@@ -1,8 +1,8 @@
-module Pretty (pp) where
+module Pretty ( pp, render ) where
 
 import Syntax
 
-import Text.PrettyPrint
+import Text.PrettyPrint hiding ( render )
 
 class Pretty a where
   pretty :: a -> Doc
@@ -45,6 +45,8 @@ instance Pretty (Expression a) where
 instance Pretty Declaration where
   pretty (Declaration n vs e) = pretty n <+> prettyList vs <+> char '=' <+> pretty e
 
-
 pp :: Pretty a => a -> IO ()
-pp = putStrLn . (renderStyle style) . pretty
+pp = putStrLn . render
+
+render :: Pretty a => a -> String
+render = (renderStyle style) . pretty
