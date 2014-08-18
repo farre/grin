@@ -16,31 +16,31 @@ import Syntax
 import Unique
 import VarArgs
 
-number :: Integral a => a -> GrinValue
+number :: Integral a => a -> Value
 number = Number . toInteger
 
 singleton :: instr a -> Program instr a
 singleton i = i `Then` Return
 
-($+) :: Pattern p => Variable -> List GrinValue -> Grin p
+($+) :: Pattern p => Variable -> List Value -> Grin p
 ($+) n = singleton . (Application n) . list
 
-unit :: (Value v, Pattern p) => v -> Grin p
+unit :: (Pattern v, Pattern p) => v -> Grin p
 unit = singleton . Unit . toValue
 
-store :: (Value v, Pattern p) => v -> Grin p
+store :: (Pattern v, Pattern p) => v -> Grin p
 store = singleton . Store . toValue
 
 fetch :: Pattern p => Variable -> Maybe Offset -> Grin p
 fetch v o = singleton . (flip Fetch o) $ v
 
-update :: (Value v, Pattern p) => Variable -> v -> Grin p
+update :: (Pattern v, Pattern p) => Variable -> v -> Grin p
 update v = singleton . (Update v) . toValue
 
 switch :: Pattern p => Variable -> List Alternative -> Grin p
 switch v = singleton . (Switch v) . list
 
-match :: Pattern a => (a -> Grin b) -> [Variable] -> (GrinValue, Grin b)
+match :: Pattern a => (a -> Grin b) -> [Variable] -> (Value, Grin b)
 match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
 
 bind :: Pattern a => [Variable] -> (a -> b) -> (a, b)
@@ -52,10 +52,10 @@ newVariables = (map newRegister) . splits
 newRegister :: Supply s Unique -> Variable
 newRegister = Register . supplyValue
 
-interpret :: Pattern a => Grin a -> Expression GrinValue
+interpret :: Pattern a => Grin a -> Expression Value
 interpret e = runST (newSupply 0 (+1) >>= \s -> interpret' s e)
 
-interpret' :: Pattern a => Supply s Unique -> Grin a -> ST s (Expression GrinValue)
+interpret' :: Pattern a => Supply s Unique -> Grin a -> ST s (Expression Value)
 interpret' s e = go s e
   where
     go :: (Pattern a, Pattern b) =>
@@ -82,11 +82,8 @@ interpret' s e = go s e
       es' <- mapM (uncurry go) $ zip (splits s1) es
       return (Case v (zip ps es'))
 
-instance Value Integer where
-  toValue = Number
-
-instance Value GrinValue where
-  toValue = id
+--instance FooValue Value where
+--  toValue = id
 
 newtype Var = Var Variable
 
@@ -94,18 +91,18 @@ instance Pattern Var where
   fromPattern (Var v) = toValue v
   pattern (s:_) = Var s
 
-instance Pattern GrinValue where
+instance Pattern Value where
   fromPattern = id
   pattern (s:_) = toValue s
 
 class Declarable a where
   buildDeclaration :: Name
-                   -> List GrinValue
+                   -> List Value
                    -> Supply s Unique
                    -> a
                    -> ST s Declaration
 
-instance Declarable (Grin GrinValue) where
+instance Declarable (Grin Value) where
   buildDeclaration n l u g = fmap (Declaration n (list l)) $ interpret' u g
 
 instance (Pattern a, Declarable b) => Declarable (a -> b) where

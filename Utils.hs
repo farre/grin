@@ -2,11 +2,11 @@ module Utils where
 
 import Syntax
 
-var :: String -> GrinValue
+var :: String -> Value
 var = Variable . VariableName . Name
 
-cnode :: String -> [GrinValue] -> GrinValue
+cnode :: String -> [Value] -> Value
 cnode = Node . var
 
-vname :: String -> [GrinValue] -> GrinValue
+vname :: String -> [Value] -> Value
 vname = Node . var

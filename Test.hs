@@ -9,20 +9,23 @@ data Foo = Foo Variable Variable
 
 instance Pattern Foo where
   fromPattern (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
+  toValue (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
   pattern (s0:s1:_) = Foo s0 s1
 
-instance Value Foo where
-  toValue (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
+instance Pattern Integer where
+  fromPattern = Number
+  toValue = Number
+  pattern _ = error "Cannot pattern match on literals yet"
 
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n
   unit v
 
-test' :: Integer -> Grin GrinValue
+test' :: Integer -> Grin Value
 test' n = unit n >>= \(Var v) -> return (toValue v)
 
-test2 :: Integer -> Integer -> Grin GrinValue
+test2 :: Integer -> Integer -> Grin Value
 test2 m n = do
   Var v <- unit m
   Var w <- unit n
@@ -83,26 +86,26 @@ test9 (Var a0) (Var a1) = do
                   (match $ \(Var y) -> unit y))
   unit x
 
-runTest = pp $ interpret $ (test 5 :: Grin GrinValue)
+runTest = pp $ interpret $ (test 5 :: Grin Value)
 
 runTest' = pp $ interpret $ (test' 5)
 
 runTest2 = pp $ interpret $ (test2 5 6)
 
-runTest3 = pp $ interpret $ (test3 :: Grin GrinValue)
+runTest3 = pp $ interpret $ (test3 :: Grin Value)
 
-runTest4 = pp $ interpret $ (test4 :: Grin GrinValue)
+runTest4 = pp $ interpret $ (test4 :: Grin Value)
 
-runTest4' = pp $ interpret $ (test4' :: Grin GrinValue)
+runTest4' = pp $ interpret $ (test4' :: Grin Value)
 
-runTest5 = pp $ interpret $ (test5 :: Grin GrinValue)
+runTest5 = pp $ interpret $ (test5 :: Grin Value)
 
-runTest6 = pp $ interpret $ (test6 :: Grin GrinValue)
+runTest6 = pp $ interpret $ (test6 :: Grin Value)
 
-runTest7 = pp $ interpret $ (test7 :: Grin GrinValue)
+runTest7 = pp $ interpret $ (test7 :: Grin Value)
 
-runTest6' = pp $ declare (Name "foo") (test6 :: Grin GrinValue)
+runTest6' = pp $ declare (Name "foo") (test6 :: Grin Value)
 
-runTest8 = pp $ declare (Name "foo") (test8 :: Var -> Grin GrinValue)
+runTest8 = pp $ declare (Name "foo") (test8 :: Var -> Grin Value)
 
-runTest9 = pp $ declare (Name "foo") (test9 :: Var -> Var -> Grin GrinValue)
+runTest9 = pp $ declare (Name "foo") (test9 :: Var -> Var -> Grin Value)

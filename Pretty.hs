@@ -16,7 +16,7 @@ instance Pretty Variable where
 
 prettyList = hsep . ((return $!) . pretty =<<)
 
-instance Pretty GrinValue where
+instance Pretty Value where
   pretty (Number n)   = integer n
   pretty (Variable v) = pretty v
   pretty (Node t vs)  = parens $ pretty t <+> prettyList vs
