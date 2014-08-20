@@ -7,14 +7,18 @@ import Utils
 -- TODO(farre): Remove testing, start using QuickCheck!
 data Foo = Foo Variable Variable
 
+instance Literal Foo where
+  literal (Foo v0 v1) = Node (var "foo") [literal v0, literal v1]
+
 instance Pattern Foo where
-  fromPattern (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
-  toValue (Foo v0 v1) = Node (var "foo") [toValue v0, toValue v1]
+  fromPattern (Foo v0 v1) = Node (var "foo") [literal v0, literal v1]
   pattern (s0:s1:_) = Foo s0 s1
+
+instance Literal Integer where
+  literal = Number
 
 instance Pattern Integer where
   fromPattern = Number
-  toValue = Number
   pattern _ = error "Cannot pattern match on literals yet"
 
 test :: Pattern a => Integer -> Grin a
@@ -23,7 +27,7 @@ test n = do
   unit v
 
 test' :: Integer -> Grin Value
-test' n = unit n >>= \(Var v) -> return (toValue v)
+test' n = unit n >>= \(Var v) -> return (literal v)
 
 test2 :: Integer -> Integer -> Grin Value
 test2 m n = do
@@ -61,7 +65,7 @@ test6 :: Pattern a => Grin a
 test6 = do
   Var x <- unit (5 :: Integer)
   Var y <- store x
-  Var z <- (VariableName (Name "f")) $+ args (toValue x) (toValue y) (number 5)
+  Var z <- (VariableName (Name "f")) $+ args (literal x) (literal y) (number 5)
   unit z
 
 test7 :: Pattern a => Grin a

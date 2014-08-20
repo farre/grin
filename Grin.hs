@@ -25,17 +25,17 @@ singleton i = i `Then` Return
 ($+) :: Pattern p => Variable -> List Value -> Grin p
 ($+) n = singleton . (Application n) . list
 
-unit :: (Pattern v, Pattern p) => v -> Grin p
-unit = singleton . Unit . toValue
+unit :: (Literal v, Pattern p) => v -> Grin p
+unit = singleton . Unit . literal
 
-store :: (Pattern v, Pattern p) => v -> Grin p
-store = singleton . Store . toValue
+store :: (Literal v, Pattern p) => v -> Grin p
+store = singleton . Store . literal
 
 fetch :: Pattern p => Variable -> Maybe Offset -> Grin p
 fetch v o = singleton . (flip Fetch o) $ v
 
-update :: (Pattern v, Pattern p) => Variable -> v -> Grin p
-update v = singleton . (Update v) . toValue
+update :: (Literal v, Pattern p) => Variable -> v -> Grin p
+update v = singleton . (Update v) . literal
 
 switch :: Pattern p => Variable -> List Alternative -> Grin p
 switch v = singleton . (Switch v) . list
@@ -82,18 +82,15 @@ interpret' s e = go s e
       es' <- mapM (uncurry go) $ zip (splits s1) es
       return (Case v (zip ps es'))
 
---instance FooValue Value where
---  toValue = id
-
 newtype Var = Var Variable
 
 instance Pattern Var where
-  fromPattern (Var v) = toValue v
+  fromPattern (Var v) = literal v
   pattern (s:_) = Var s
 
 instance Pattern Value where
   fromPattern = id
-  pattern (s:_) = toValue s
+  pattern (s:_) = literal s
 
 class Declarable a where
   buildDeclaration :: Name

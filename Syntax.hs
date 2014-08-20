@@ -37,19 +37,26 @@ data Declaration where
               -> Expression Value
               -> Declaration
 
+class Literal a where
+  literal :: a -> Value
+
 class Pattern a where
   fromPattern :: a -> Value
-  toValue :: a -> Value
   pattern :: [Variable] -> a
 
 newtype Name = Name String
 
 data Variable = Register Integer | VariableName Name
 
+instance Literal Variable where
+  literal = Variable
+
 instance Pattern Variable where
   fromPattern = Variable
-  toValue = Variable
   pattern vs = head vs
+
+instance Literal Value where
+  literal = id
 
 type Grin a = Program Expression a
 
