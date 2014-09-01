@@ -34,7 +34,14 @@ instance Pretty (Expression a) where
     4 cs $$ rparen
     where
       v' = pretty v
-      cs = vcat $ [ v' <+> text "->" <+> pretty e | (v, e) <- as]
+      cs = vcat' $ [ alt w e | (w, e) <- as]
+      vcat' [] = empty
+      vcat' (x:xs) = x `seq` x $$ vcat' xs
+      alt w e = w' `seq` e' `seq` w' <+> text "->" <+> e'
+        where
+          w' = pretty w
+          e' = pretty e
+
   pretty (Application n vs) = pretty n <+> prettyList vs
   pretty (Unit v)           = text "unit" <+> pretty v
   pretty (Store v)          = text "store" <+> pretty v
