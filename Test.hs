@@ -17,10 +17,6 @@ instance Pattern Foo where
 instance Literal Integer where
   literal = Number
 
-instance Pattern Integer where
-  fromPattern = Number
-  pattern _ = error "Cannot pattern match on literals yet"
-
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n

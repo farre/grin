@@ -48,12 +48,12 @@ newtype Name = Name String
 
 data Variable = Register Integer | VariableName Name
 
+instance Pattern Value where
+  fromPattern = id
+  pattern (s:_) = literal s
+
 instance Literal Variable where
   literal = Variable
-
-instance Pattern Variable where
-  fromPattern = Variable
-  pattern vs = head vs
 
 instance Literal Value where
   literal = id

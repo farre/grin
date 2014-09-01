@@ -82,16 +82,6 @@ interpret' s e = go s e
       es' <- mapM (uncurry go) $ zip (splits s1) es
       return (Case v (zip ps es'))
 
-newtype Var = Var Variable
-
-instance Pattern Var where
-  fromPattern (Var v) = literal v
-  pattern (s:_) = Var s
-
-instance Pattern Value where
-  fromPattern = id
-  pattern (s:_) = literal s
-
 class Declarable a where
   buildDeclaration :: Name
                    -> List Value
