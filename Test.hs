@@ -73,14 +73,14 @@ test7 = do
              (match $ \(Foo a b) -> unit x)
   unit y
 
-test8 :: Pattern a => Var -> Grin a
-test8 (Var f) = do
+test8 :: Pattern a => Variable -> Grin a
+test8 f = do
   Var x <- switch f $ args
              (match $ \(Foo a b) -> unit a)
   unit x
 
-test9 :: Pattern a => Var -> Var -> Grin a
-test9 (Var a0) (Var a1) = do
+test9 :: Pattern a => Variable -> Variable -> Grin a
+test9 a0 a1 = do
   Var x <- switch a0 $ args
              (match $ \(Foo a b) ->
                 switch a1 $ args
@@ -107,6 +107,6 @@ runTest7 = pp . transform . interpret $ (test7 :: Grin Value)
 
 runTest6' = pp $ declare (Name "foo") (test6 :: Grin Value)
 
-runTest8 = pp $ declare (Name "foo") (test8 :: Var -> Grin Value)
+runTest8 = pp $ declare (Name "foo") (test8 :: Variable -> Grin Value)
 
-runTest9 = pp $ declare (Name "foo") (test9 :: Var -> Var -> Grin Value)
+runTest9 = pp $ declare (Name "foo") (test9 :: Variable -> Variable -> Grin Value)

@@ -15,6 +15,7 @@ instance Pretty Variable where
   pretty (Register n) = char 'x' <> integer n
   pretty (VariableName n) = pretty n
 
+prettyList :: Pretty p => [p] -> Doc
 prettyList = hsep . ((return $!) . pretty =<<)
 
 instance Pretty Value where

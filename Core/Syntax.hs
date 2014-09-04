@@ -12,4 +12,4 @@ data Expression
   | Update Variable Value
 
 data Declaration
-  = Declaration Name [Value] Expression
+  = Declaration Name [Variable] Expression

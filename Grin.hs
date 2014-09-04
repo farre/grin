@@ -85,7 +85,7 @@ interpret' s e = go s e
 
 class Declarable a where
   buildDeclaration :: Name
-                   -> List Value
+                   -> List Variable
                    -> Supply s Unique
                    -> a
                    -> ST s Declaration
@@ -93,11 +93,11 @@ class Declarable a where
 instance Declarable (Grin Value) where
   buildDeclaration n l u g = fmap ((Declaration n (list l)) . transform) $ interpret' u g
 
-instance (Pattern a, Declarable b) => Declarable (a -> b) where
+instance Declarable b => Declarable (Variable -> b) where
   buildDeclaration n l s f =
     let (s0, s1) = split s
-        (p, d) = bind (newVariables s0) f
-    in buildDeclaration n (append (fromPattern p) l) s1 d
+        p:_ = newVariables s0
+    in buildDeclaration n (append p l) s1 (f p)
 
 declare :: Declarable d => Name -> d -> Declaration
 declare name decl = runST (newSupply 0 (+1) >>= \s -> buildDeclaration name empty s decl)
