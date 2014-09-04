@@ -17,6 +17,8 @@ import Syntax
 import Unique
 import VarArgs
 
+type Unique s = Supply s Integer
+
 number :: Integral a => a -> Value
 number = Number . toInteger
 
@@ -47,20 +49,20 @@ match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
 bind :: Pattern a => [Variable] -> (a -> b) -> (a, b)
 bind vs f = let p = pattern vs in (p, f p)
 
-newVariables :: Supply s Unique -> [Variable]
+newVariables :: Unique s -> [Variable]
 newVariables = (map newRegister) . splits
 
-newRegister :: Supply s Unique -> Variable
+newRegister :: Unique s -> Variable
 newRegister = Register . supplyValue
 
 interpret :: Pattern a => Grin a -> Expression Value
 interpret e = runST (newSupply 0 (+1) >>= \s -> interpret' s e)
 
-interpret' :: Pattern a => Supply s Unique -> Grin a -> ST s (Expression Value)
+interpret' :: Pattern a => Unique s -> Grin a -> ST s (Expression Value)
 interpret' s e = go s e
   where
     go :: (Pattern a, Pattern b) =>
-          Supply s Unique -> Grin a -> ST s (Expression b)
+          Unique s -> Grin a -> ST s (Expression b)
     go s (Return x)    = return . Unit . fromPattern $ x
     go s (x@(Switch        {}) `Then` f) = do
       x' <- switchToCase s x
@@ -76,7 +78,7 @@ interpret' s e = go s e
       e' <- go s1 e
       return (Sequence x (Bind p e'))
     switchToCase :: Pattern a =>
-                    Supply s Unique -> Expression a -> ST s (Expression a)
+                    Unique s -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
       let (s0, s1) = split s
           (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s0
@@ -86,7 +88,7 @@ interpret' s e = go s e
 class Declarable a where
   buildDeclaration :: Name
                    -> List Variable
-                   -> Supply s Unique
+                   -> Unique s
                    -> a
                    -> ST s Declaration
 

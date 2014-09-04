@@ -49,5 +49,3 @@ instance Literal Value where
 
 type Grin a = Program Expression a
 
-type Unique = Integer
-
