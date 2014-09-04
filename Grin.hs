@@ -10,6 +10,7 @@ module Grin (
 import Control.Monad.ST.Lazy
 import Data.Function
 
+import Core ( transform, Declaration(..) )
 import List
 import Program
 import Syntax
@@ -90,7 +91,7 @@ class Declarable a where
                    -> ST s Declaration
 
 instance Declarable (Grin Value) where
-  buildDeclaration n l u g = fmap (Declaration n (list l)) $ interpret' u g
+  buildDeclaration n l u g = fmap ((Declaration n (list l)) . transform) $ interpret' u g
 
 instance (Pattern a, Declarable b) => Declarable (a -> b) where
   buildDeclaration n l s f =

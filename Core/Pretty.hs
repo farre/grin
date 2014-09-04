@@ -1,6 +1,7 @@
-module Pretty ( pp, render ) where
+module Core.Pretty ( pp, render ) where
 
-import Syntax
+import Core.Value
+import Core.Syntax
 
 import Text.PrettyPrint hiding ( render )
 
@@ -21,11 +22,11 @@ instance Pretty Value where
   pretty (Variable v) = pretty v
   pretty (Node t vs)  = parens $ pretty t <+> prettyList vs
 
-instance Pretty (Expression a) where
-  pretty (Sequence e0 (Bind p e1)) =
+instance Pretty Expression where
+  pretty (Sequence e0 p e1) =
     e0' `seq` p' `seq` e1' `seq` (e0' <> semi <+>
      char '\\' <> p' <+> text "->") $+$ e1'
-    where p' = pretty (fromPattern p)
+    where p' = pretty p
           e0' = pretty e0
           e1' = pretty e1
   pretty (Case v as) =
@@ -57,3 +58,4 @@ pp = putStrLn . render
 
 render :: Pretty a => a -> String
 render = (renderStyle style) . pretty
+

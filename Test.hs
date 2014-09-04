@@ -1,7 +1,8 @@
 module Test where
 
+import Core
+import Core.Pretty
 import Grin
-import Pretty
 import Utils
 
 -- TODO(farre): Remove testing, start using QuickCheck!
@@ -86,23 +87,23 @@ test9 (Var a0) (Var a1) = do
                   (match $ \(Var y) -> unit y))
   unit x
 
-runTest = pp $ interpret $ (test 5 :: Grin Value)
+runTest = pp . transform . interpret $ (test 5 :: Grin Value)
 
-runTest' = pp $ interpret $ (test' 5)
+runTest' = pp . transform . interpret $ (test' 5)
 
-runTest2 = pp $ interpret $ (test2 5 6)
+runTest2 = pp . transform . interpret $ (test2 5 6)
 
-runTest3 = pp $ interpret $ (test3 :: Grin Value)
+runTest3 = pp . transform . interpret $ (test3 :: Grin Value)
 
-runTest4 = pp $ interpret $ (test4 :: Grin Value)
+runTest4 = pp . transform . interpret $ (test4 :: Grin Value)
 
-runTest4' = pp $ interpret $ (test4' :: Grin Value)
+runTest4' = pp . transform . interpret $ (test4' :: Grin Value)
 
-runTest5 = pp $ interpret $ (test5 :: Grin Value)
+runTest5 = pp . transform . interpret $ (test5 :: Grin Value)
 
-runTest6 = pp $ interpret $ (test6 :: Grin Value)
+runTest6 = pp . transform . interpret $ (test6 :: Grin Value)
 
-runTest7 = pp $ interpret $ (test7 :: Grin Value)
+runTest7 = pp . transform . interpret $ (test7 :: Grin Value)
 
 runTest6' = pp $ declare (Name "foo") (test6 :: Grin Value)
 
