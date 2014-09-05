@@ -1,6 +1,7 @@
 module Core.Pretty ( pp, render ) where
 
 import Core.Value
+import Core.Variable
 import Core.Syntax
 
 import Text.PrettyPrint hiding ( render )

@@ -2,28 +2,32 @@ module Test where
 
 import Core
 import Core.Pretty
-import Grin
+import qualified Grin as Grin
+import Grin hiding ( Value )
 import Utils
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 data Foo = Foo Variable Variable
 
-instance Literal Foo where
-  literal (Foo v0 v1) = Node (var "foo") [literal v0, literal v1]
-
 instance Pattern Foo where
-  fromPattern (Foo v0 v1) = Node (var "foo") [literal v0, literal v1]
+  fromPattern (Foo v0 v1) = Grin.Value $ Node (var "foo") [fromValue v0, fromValue v1]
   pattern (s0:s1:_) = Foo s0 s1
 
+instance Grin.Valueable Foo where
+  fromValue (Foo v0 v1) = Node (var "foo") [fromValue v0, fromValue v1]
+
+instance Literal Foo where
+  literal = Grin.Value
+
 instance Literal Integer where
-  literal = Number
+  literal = Grin.Value . Number
 
 test :: Pattern a => Integer -> Grin a
 test n = do
   Var v <- unit n
   unit v
 
-test' :: Integer -> Grin Value
+test' :: Integer -> Grin Grin.Value
 test' n = unit n >>= \(Var v) -> return (literal v)
 
 test2 :: Integer -> Integer -> Grin Value
@@ -36,10 +40,11 @@ test2 m n = do
 
 test3 :: Pattern a => Grin a
 test3 = do
-  Foo v0 v1 <- unit (Node (var "foo") [(number 3), (number 8)])
+  Foo v0 v1 <- unit (Node (var "foo") [fromValue (number 3), fromValue (number 8)])
   Var v2 <- unit v1
   Foo v3 v4 <- unit (42 :: Integer)
   Var v5 <- unit v4
+  Var v6 <- unit (Foo v3 v5)
   unit v0
 
 test4 :: Pattern a => Grin a
@@ -47,6 +52,8 @@ test4 = do
   Var x <- test (5 :: Integer)
   Var y <- test3
   unit y
+
+
 
 test5 :: Pattern a => Grin a
 test5 = do

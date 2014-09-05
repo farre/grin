@@ -1,6 +1,7 @@
 module Core.Syntax where
 
 import Core.Value
+import Core.Variable
 
 data Expression
   = Sequence Expression Value Expression

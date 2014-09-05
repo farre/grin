@@ -1,13 +1,8 @@
 module Core.Value where
 
+import Core.Variable
+
 type Offset = Integer
-
-newtype Name
-  = Name String
-
-data Variable
-  = Register Integer
-  | VariableName Name
 
 data Value
   = Number Integer

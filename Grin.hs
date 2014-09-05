@@ -10,7 +10,8 @@ module Grin (
 import Control.Monad.ST.Lazy
 import Data.Function
 
-import Core ( transform, Declaration(..) )
+import Core ( transform, Declaration(..), Variable(..), Offset, Name(..) )
+import qualified Core.Value as V
 import List
 import Program
 import Syntax
@@ -20,7 +21,7 @@ import VarArgs
 type Unique s = Supply s Integer
 
 number :: Integral a => a -> Value
-number = Number . toInteger
+number = Value . V.Number . toInteger
 
 singleton :: instr a -> Program instr a
 singleton i = i `Then` Return
@@ -92,7 +93,7 @@ class Declarable a where
                    -> a
                    -> ST s Declaration
 
-instance Declarable (Grin Value) where
+instance Declarable (Grin V.Value) where
   buildDeclaration n l u g = fmap ((Declaration n (list l)) . transform) $ interpret' u g
 
 instance Declarable b => Declarable (Variable -> b) where

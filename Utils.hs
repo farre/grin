@@ -1,6 +1,8 @@
 module Utils where
 
-import Syntax
+import Syntax ( Pattern(..), literal )
+import Core.Variable
+import Core.Value
 
 newtype Var = Var Variable
 
