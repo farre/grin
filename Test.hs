@@ -5,6 +5,7 @@ import Core.Pretty
 import qualified Grin as Grin
 import Grin hiding ( Value )
 import Utils
+import VarArgs
 
 -- TODO(farre): Remove testing, start using QuickCheck!
 data Foo = Foo Variable Variable
@@ -53,8 +54,6 @@ test4 = do
   Var y <- test3
   unit y
 
-
-
 test5 :: Pattern a => Grin a
 test5 = do
   Var x <- unit (5 :: Integer)
@@ -72,27 +71,34 @@ test6 = do
   Var z <- (VariableName (Name "f")) $+ args (literal x) (literal y) (number 5)
   unit z
 
+
 test7 :: Pattern a => Grin a
 test7 = do
   Var x <- unit (5 :: Integer)
-  Var y <- switch x $ args
-             (match $ \(Var x) -> unit x)
-             (match $ \(Foo a b) -> unit x)
+  Var y <- switch x $ on
+             (\(Var x) -> unit x :: Grin Value)
+             (\(Foo a b) -> unit x :: Grin Value)
   unit y
+
+-- This is needed since alternatives in switch needs to end with a
+-- typed expression.
+unit' :: Literal v => v -> Grin Value
+unit' = unit
 
 test8 :: Pattern a => Variable -> Grin a
 test8 f = do
-  Var x <- switch f $ args
-             (match $ \(Foo a b) -> unit a)
+  Var x <- switch f $ on
+             (\(Foo a b) -> unit' a)
   unit x
 
 test9 :: Pattern a => Variable -> Variable -> Grin a
 test9 a0 a1 = do
-  Var x <- switch a0 $ args
-             (match $ \(Foo a b) ->
-                switch a1 $ args
-                  (match $ \(Var y) -> unit y))
+  Var x <- switch a0 $ on
+             (\(Foo a b) ->
+                switch a1 $ on
+                  (\(Var y) -> unit' y) :: Grin Value)
   unit x
+
 
 runTest = pp . transform . interpret $ (test 5 :: Grin Value)
 

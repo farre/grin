@@ -1,6 +1,6 @@
 {-# Language GADTs, NoMonomorphismRestriction, NoMonoLocalBinds,
              RankNTypes, TypeSynonymInstances, FlexibleInstances,
-             RecordWildCards  #-}
+             RecordWildCards, MultiParamTypeClasses, FlexibleContexts #-}
 module Grin (
   module Grin,
   module Syntax,
@@ -8,7 +8,7 @@ module Grin (
 ) where
 
 import Control.Monad.ST.Lazy
-import Data.Function
+import Data.Monoid
 
 import Core ( transform, Declaration(..), Variable(..), Offset, Name(..) )
 import qualified Core.Value as V
@@ -26,8 +26,8 @@ number = Value . V.Number . toInteger
 singleton :: instr a -> Program instr a
 singleton i = i `Then` Return
 
-($+) :: Pattern p => Variable -> List Value -> Grin p
-($+) n = singleton . (Application n) . list
+($+) :: Pattern p => Variable -> Terminate (List Value) -> Grin p
+($+) n = singleton . (Application n) . list . terminate
 
 unit :: (Literal v, Pattern p) => v -> Grin p
 unit = singleton . Unit . literal
@@ -41,10 +41,16 @@ fetch v o = singleton . (flip Fetch o) $ v
 update :: (Literal v, Pattern p) => Variable -> v -> Grin p
 update v = singleton . (Update v) . literal
 
-switch :: Pattern p => Variable -> List Alternative -> Grin p
-switch v = singleton . (Switch v) . list
+switch :: Pattern p => Variable -> Terminate (List Alternative) -> Grin p
+switch v = singleton . (Switch v) . list . terminate
 
-match :: Pattern a => (a -> Grin b) -> [Variable] -> (Value, Grin b)
+on :: CPolyVariadic (List Alternative) r => r
+on = ctm (mempty :: List Alternative)
+
+args :: CPolyVariadic (List Value) r => r
+args = ctm (mempty :: List Value)
+
+match :: (Pattern p, Pattern p') => (p -> Grin p') -> [Variable] -> (Value, Grin p')
 match f vs = let (p, e) = bind vs f in (fromPattern p, f p)
 
 bind :: Pattern a => [Variable] -> (a -> b) -> (a, b)
@@ -82,7 +88,7 @@ interpret' s e = go s e
                     Unique s -> Expression a -> ST s (Expression a)
     switchToCase s (Switch v as) = do
       let (s0, s1) = split s
-          (ps, es) = unzip . (zipWith ($) as) . (map newVariables) . splits $ s0
+          (ps, es) = unzip . (zipWith (($) . unalternative) as) . (map newVariables) . splits $ s0
       es' <- mapM (uncurry go) $ zip (splits s1) es
       return (Case v (zip ps es'))
 
@@ -104,3 +110,6 @@ instance Declarable b => Declarable (Variable -> b) where
 
 declare :: Declarable d => Name -> d -> Declaration
 declare name decl = runST (newSupply 0 (+1) >>= \s -> buildDeclaration name empty s decl)
+
+instance (Pattern p, Pattern p') => Monoidable (p -> Grin p') (List Alternative) where
+  toMonoid = flip append empty . Alternative . match

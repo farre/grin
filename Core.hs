@@ -11,7 +11,7 @@ import Core.Syntax
 import qualified Syntax as Grin
 import Syntax ( Pattern(..), Valueable(..) )
 
-transform :: Pattern a => Grin.Expression a -> Expression
+transform :: Grin.Expression a -> Expression
 transform e =
   case e of 
     Grin.Sequence e0 (Grin.Bind p e1) ->
