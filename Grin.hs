@@ -32,17 +32,32 @@ singleton i = i `Then` Return
 unit :: (Literal v, Pattern p) => v -> Grin p
 unit = singleton . Unit . literal
 
+unit' :: Literal v => v -> Grin Value
+unit' = unit
+
 store :: (Literal v, Pattern p) => v -> Grin p
 store = singleton . Store . literal
+
+store' :: Literal v => v -> Grin Value
+store' = store
 
 fetch :: Pattern p => Variable -> Maybe Offset -> Grin p
 fetch v o = singleton . (flip Fetch o) $ v
 
+fetch' :: Variable -> Maybe Offset -> Grin Value
+fetch' = fetch
+
 update :: (Literal v, Pattern p) => Variable -> v -> Grin p
 update v = singleton . (Update v) . literal
 
+update' :: Literal v => Variable -> v -> Grin Value
+update' = update
+
 switch :: Pattern p => Variable -> Terminate (List Alternative) -> Grin p
 switch v = singleton . (Switch v) . list . terminate
+
+switch' :: Variable -> Terminate (List Alternative) -> Grin Value
+switch' = switch
 
 on :: CPolyVariadic (List Alternative) r => r
 on = ctm (mempty :: List Alternative)

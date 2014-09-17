@@ -76,14 +76,9 @@ test7 :: Pattern a => Grin a
 test7 = do
   Var x <- unit (5 :: Integer)
   Var y <- switch x $ on
-             (\(Var x) -> unit x :: Grin Value)
-             (\(Foo a b) -> unit x :: Grin Value)
+             (\(Var x) -> unit' x)
+             (\(Foo a b) -> unit' x)
   unit y
-
--- This is needed since alternatives in switch needs to end with a
--- typed expression.
-unit' :: Literal v => v -> Grin Value
-unit' = unit
 
 test8 :: Pattern a => Variable -> Grin a
 test8 f = do
@@ -95,8 +90,8 @@ test9 :: Pattern a => Variable -> Variable -> Grin a
 test9 a0 a1 = do
   Var x <- switch a0 $ on
              (\(Foo a b) ->
-                switch a1 $ on
-                  (\(Var y) -> unit' y) :: Grin Value)
+                switch' a1 $ on
+                  (\(Var y) -> unit' y))
   unit x
 
 
