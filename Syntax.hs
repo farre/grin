@@ -3,6 +3,7 @@ module Syntax(
   module Syntax
 ) where
 
+import Control.Monad ( liftM )
 import Data.Monoid
 
 import Core.Variable
@@ -10,7 +11,7 @@ import qualified Core.Value as Core
 import Core.Value ( Offset )
 import Program
 import VarArgs
-import List
+import FancyList
 
 {-
   What follows is a deep embedding of GRIN as a DSL with a patterns.
@@ -30,7 +31,7 @@ data Alternative where
   Alternative :: Pattern b => ([Variable] -> (Value, Grin b)) -> Alternative
 
 unalternative :: Alternative -> [Variable] -> (Value, Grin Value)
-unalternative (Alternative f) = \vs -> let (v, p) = f vs in (v, p >>= return . fromPattern)
+unalternative (Alternative f) vs = let (v, p) = f vs in (v, liftM fromPattern p)
 
 data Expression a where
   Sequence    :: (Pattern a, Pattern b) =>

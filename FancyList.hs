@@ -1,4 +1,4 @@
-module List where
+module FancyList where
 
 import Data.Monoid
 

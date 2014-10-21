@@ -2,7 +2,7 @@ module Test where
 
 import Core
 import Core.Pretty
-import qualified Grin as Grin
+import qualified Grin
 import Grin hiding ( Value )
 import Utils
 import VarArgs
@@ -68,7 +68,7 @@ test6 :: Pattern a => Grin a
 test6 = do
   Var x <- unit (5 :: Integer)
   Var y <- store x
-  Var z <- (VariableName (Name "f")) $+ args (literal x) (literal y) (number 5)
+  Var z <- VariableName (Name "f") $+ args (literal x) (literal y) (number 5)
   unit z
 
 
@@ -97,9 +97,9 @@ test9 a0 a1 = do
 
 runTest = pp . transform . interpret $ (test 5 :: Grin Value)
 
-runTest' = pp . transform . interpret $ (test' 5)
+runTest' = pp . transform . interpret $ test' 5
 
-runTest2 = pp . transform . interpret $ (test2 5 6)
+runTest2 = pp . transform . interpret $ test2 5 6
 
 runTest3 = pp . transform . interpret $ (test3 :: Grin Value)
 

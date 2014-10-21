@@ -37,7 +37,7 @@ instance Pretty Expression where
     4 cs $$ rparen
     where
       v' = pretty v
-      cs = vcat' $ [ alt w e | (w, e) <- as]
+      cs = vcat' [ alt w e | (w, e) <- as ]
       vcat' [] = empty
       vcat' (x:xs) = x `seq` x $$ vcat' xs
       alt w e = w' `seq` e' `seq` w' <+> text "->" <+> e'
@@ -59,5 +59,5 @@ pp :: Pretty a => a -> IO ()
 pp = putStrLn . render
 
 render :: Pretty a => a -> String
-render = (renderStyle style) . pretty
+render = renderStyle style . pretty
 

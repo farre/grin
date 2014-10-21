@@ -1,13 +1,11 @@
 module Core (
-  module Core.Syntax,
-  module Core.Value,
-  module Core.Variable,
+  module Export,
   transform,
 ) where
 
-import Core.Value
-import Core.Variable
-import Core.Syntax
+import Core.Value as Export
+import Core.Variable as Export
+import Core.Syntax as Export
 import qualified Syntax as Grin
 import Syntax ( Pattern(..), Valueable(..) )
 
